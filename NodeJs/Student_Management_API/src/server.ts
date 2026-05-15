@@ -87,18 +87,27 @@ app.get("/api/students", async (req: Request, res: Response) => {
 app.get("/api/students/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
     const result = await pool.query(
       `
-      SELECT * FROM users WHERE id=$1
+      SELECT * FROM students WHERE id = $1
       `,
       [id],
     );
+
     if (result.rows.length === 0) {
       return res.status(404).json({
-        message: "User Not Found",
+        success: false,
+        message: "Student Not Found",
         data: {},
       });
     }
+
+    res.status(200).json({
+      success: true,
+      message: "Student retrieved successfully",
+      data: result.rows[0],
+    });
   } catch (error: any) {
     res.status(500).json({
       success: false,
@@ -120,7 +129,8 @@ app.patch("/api/students/:id", async (req: Request, res: Response) => {
         data: {},
       });
     }
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       UPDATE students
       SET
         name = COALESCE($1, name),
@@ -129,13 +139,40 @@ app.patch("/api/students/:id", async (req: Request, res: Response) => {
         age = COALESCE($4, age),
         updated_at = NOW()
       WHERE id = $5
-      RETURNING *`,[name, email, course,  age, id]);
-      res.status(200).json({
+      RETURNING *`,
+      [name, email, course, age, id],
+    );
+    res.status(200).json({
       success: true,
       message: "User updated successfully",
       data: result.rows[0],
     });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
+app.delete("/api/students/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const checkUser = await pool.query(`SELECT * FROM users WHERE id = $1`, [
+      id,
+    ]);
+    if (checkUser.rows.length === 0) {
+      return res.status(404).json({
+        message: "User Not Found",
+        data: {},
+      });
+    }
+    await pool.query(`DELETE FROM users WHERE id = $1`, [id]);
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
   } catch (error: any) {
     res.status(500).json({
       success: false,
