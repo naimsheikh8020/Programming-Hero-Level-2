@@ -5,6 +5,7 @@ import express, {
 } from "express";
 import {  pool } from "./db";
 import { UserRoute } from "./modules/user/user.route";
+import { profileRoute } from "./modules/profile/profile.route";
 
 const app: Application = express();
 
@@ -13,39 +14,13 @@ app.use(express.text());
 
 
 
-app.get("/", (req: Request, res: Response) => {
-  // res.send("Hello World")
-  res.status(200).json({
-    message: "express Server",
-    author: "Naim",
-  });
+app.get("/", (req, res) => {
+  res.send("Server is running");
 });
 
-app.use('/api/users',UserRoute)
+app.use('/api/users',UserRoute);
+app.use('/api/profile',profileRoute)
 
-
-
-
-app.delete("/api/users/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  try {
-
-    
-
-   
-
-    
-
-   
-
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
 
 
 export default app

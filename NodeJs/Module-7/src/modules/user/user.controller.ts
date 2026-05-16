@@ -2,6 +2,8 @@ import { type Request, type Response } from "express";
 import { pool } from "../../db";
 import { userService } from "./user.service";
 
+
+
 const creatUser = async (req: Request, res: Response) => {
   // const { name, email, password, age } = req.body;
   try {
@@ -111,10 +113,12 @@ const deleteUser = async (req: Request, res: Response) => {
   }
 };
 
+
+
 export const userController = {
   creatUser,
   getAllUser,
   getSigleUser,
   updateUser,
-  deleteUser,
+  deleteUser
 };
