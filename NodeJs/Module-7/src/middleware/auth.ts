@@ -1,5 +1,7 @@
 import {  type NextFunction, type Request, type Response } from "express";
-
+import jwt, { type JwtPayload } from "jsonwebtoken"
+import config from "../config";
+import { pool } from "../db";
 
 const auth = ()=>
 {
@@ -12,6 +14,30 @@ const auth = ()=>
       message: "Unauthorized Access!!"
     })
   }
+
+  const decoded = jwt.verify(token as string, config.secret as string) as JwtPayload
+
+  const userData = await pool.query(`
+    SELECT * FROM  users WHERE email=$1
+    `, [decoded.email])
+
+    const user = userData.rows[0]
+    console.log(user)
+    
+    if(userData.rows.length ===0){
+      res.status(404).json({
+        success:false,
+        message: "User Not found"
+      })
+    }
+
+    if(!user.is_active){
+      res.status(403).json({
+        success: false,
+        message : "Forbiddenn!!"
+      })
+    }
+
   next()
 } 
 }
