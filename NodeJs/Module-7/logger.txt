@@ -19,3 +19,4 @@ Method -> GET | URL -> /api/users/ | Time -> 05/19/2026, 02:04:59 PM
 Method -> GET | URL -> /api/users/ | Time -> 05/19/2026, 02:05:03 PM
 Method -> GET | URL -> /api/users/ | Time -> 05/19/2026, 02:05:08 PM
 Method -> GET | URL -> /api/users/ | Time -> 05/19/2026, 02:08:32 PM
+Method -> POST | URL -> /api/auth/login | Time -> 05/19/2026, 02:42:07 PM
