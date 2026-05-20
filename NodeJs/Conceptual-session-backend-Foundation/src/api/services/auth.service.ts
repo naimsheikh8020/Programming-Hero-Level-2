@@ -1,10 +1,9 @@
 import { sql } from "../../db/index.js";
-import type { RUser } from "../../types/index.js";
+import type { RUser, User } from "../../types/index.js";
 import bcrypt from "bcrypt";
 
 class AuthService {
   async createUser(user: RUser & { password: string }) {
-    
     const { name, email, password, age, role } = user;
 
     const hash = await bcrypt.hash(password, 10);
@@ -23,6 +22,18 @@ class AuthService {
 
     return res[0];
   }
+  async validateUser(email: string, password: string) {
+    const res = await sql`
+    SELECT * FROM users WHERE email =${email}
+    `;
+    if (!res.length) {
+      return null;
+    }
+    const { passwordHash, ...user } = res[0] as User;
+    const isValid = await bcrypt.compare(password, passwordHash)
+    
+    return isValid ? user : null
+  }
 }
 
-export default new AuthService()
+export default new AuthService();
