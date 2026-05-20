@@ -23,17 +23,22 @@ class AuthService {
     return res[0];
   }
   async validateUser(email: string, password: string) {
-    const res = await sql`
-    SELECT * FROM users WHERE email =${email}
-    `;
-    if (!res.length) {
-      return null;
-    }
-    const { passwordHash, ...user } = res[0] as User;
-    const isValid = await bcrypt.compare(password, passwordHash)
-    
-    return isValid ? user : null
+  const res = await sql`
+    SELECT id, name, email, passwordhash, age, role
+    FROM users
+    WHERE email = ${email}
+  `;
+
+  if (!res.length) {
+    return null;
   }
+
+  const { passwordhash, ...user } = res[0] as any;
+
+  const isValid = await bcrypt.compare(password, passwordhash);
+
+  return isValid ? user : null;
+}
 }
 
 export default new AuthService();
