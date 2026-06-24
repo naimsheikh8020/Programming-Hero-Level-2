@@ -3,6 +3,7 @@ import cors from "cors";
 import config from "./config/index"
 import cookieParser from "cookie-parser";
 import { prisma } from "./lib/prisma";
+import { userRoutes } from "./modules/user/user.route";
 
 const app:Application = express();
 app.use(cors({
@@ -19,5 +20,7 @@ app.get("/", async (req:Request, res:Response)=>{
   console.log(user);
   res.send("Hello World naim");
 })
+
+app.use("/api/users", userRoutes)
 
 export default app;
