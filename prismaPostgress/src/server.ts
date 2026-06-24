@@ -1,8 +1,9 @@
 import app from "./app";
 import { prisma } from "./lib/prisma";
 import "dotenv/config";
+import config from "./config/index"
 
-const PORT = process.env.PORT || 3000;
+const PORT = config.port;
 async function main(){
   try{
     await prisma.$connect();
