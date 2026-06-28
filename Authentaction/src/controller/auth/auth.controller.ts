@@ -4,7 +4,7 @@ import { User } from "../../models/user.model.js";
 import { checkPassword, hashPassword } from "../../lib/hash.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../../lib/email.js";
-import { createAccessToken } from "../../lib/token.js";
+import { createAccessToken, createRefreshToken } from "../../lib/token.js";
 
 function getAppUrl() {
   return process.env.App_URL || "http://localhost:5000";
@@ -173,13 +173,30 @@ export const loginHandler = async(req: Request, res: Response) => {
     }
 
     const accessToken = createAccessToken(user.id, user.role, user.tokenVersion);
+    
+    const refreshToken = createRefreshToken(user.id, user.role, user.tokenVersion);
+
+    const isProd = process.env.NODE_ENV === "production";
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     return res.status(200).json({
       status: "success",
       message: "Login successful",
-      data: {
-        accessToken
-      }
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        twoFactorEnabled: user.twoFactorEnabled,
+      },
     });
 
   } catch (error) {

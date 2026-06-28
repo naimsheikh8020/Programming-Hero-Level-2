@@ -8,3 +8,12 @@ export const createAccessToken = (userId: string, role: "user" | "admin", tokenV
   };
   return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "1h" });
 };
+
+export const createRefreshToken = (userId: string, role: "user" | "admin", tokenVersion: number) => {
+  const payload = {
+    sub: userId,
+    role: role,
+    tokenVersion: tokenVersion
+  };
+  return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "7d" });
+};
