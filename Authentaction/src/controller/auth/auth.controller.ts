@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
-import { registerSchema } from "./auth.schema.js";
+import { loginSchema, registerSchema } from "./auth.schema.js";
 import { User } from "../../models/user.model.js";
-import { hashPassword } from "../../lib/hash.js";
+import { checkPassword, hashPassword } from "../../lib/hash.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../../lib/email.js";
+import { createAccessToken } from "../../lib/token.js";
 
 function getAppUrl() {
   return process.env.App_URL || "http://localhost:5000";
@@ -40,6 +41,7 @@ export const registerHandler = async (req: Request, res: Response) => {
       isEmailVerified: false,
       twoFactorEnabled: false,
     });
+
     const verifyToken = jwt.sign(
       {
         sub: newlyCreatedUser.id,
@@ -49,6 +51,7 @@ export const registerHandler = async (req: Request, res: Response) => {
     );
 
     const verifyUrl = `${getAppUrl()}/auth/verify-email?token=${verifyToken}`;
+
     await sendEmail(
       newlyCreatedUser.email,
       "Verify your email",
@@ -60,7 +63,7 @@ export const registerHandler = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       status: "success",
-      message: "User created successfully",
+      message: "User email verified successfully",
       user: {
         id: newlyCreatedUser.id,
         email: newlyCreatedUser.email,
@@ -77,3 +80,112 @@ export const registerHandler = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const verifyEmailHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const token = req.query.token as string | undefined;
+
+    if (!token) {
+      return res.status(400).json({
+        status: "error",
+        message: "Verification token is required",
+      });
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as jwt.JwtPayload;
+
+    const userId = decoded.sub as string;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is already verified",
+      });
+    }
+
+    user.isEmailVerified = true;
+
+    await user.save();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid or expired verification token",
+    });
+  }
+};
+
+
+export const loginHandler = async(req: Request, res: Response) => {
+  try {
+    const result = await loginSchema.safeParse(req.body);
+    if(!result.success){
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid request data",
+        errors: result.error.flatten()
+      });
+    }
+
+    const { email, password } = result.data;
+    const NormalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: NormalizedEmail });
+    if (!user) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid email or password",
+      });
+    }
+
+    const isPasswordValid = await checkPassword(password, user.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid email or password",
+      });
+    }
+
+    if(!user.isEmailVerified){
+      return res.status(403).json({
+        status: "error",
+        message: "Please verify your email before logging in.",
+      });
+    }
+
+    const accessToken = createAccessToken(user.id, user.role, user.tokenVersion);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Login successful",
+      data: {
+        accessToken
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+}
